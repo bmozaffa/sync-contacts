@@ -8,7 +8,9 @@ function doGet(e) {
   if (sheetId) {
     try {
       syncSheet(sheetId, groups);
+      HtmlService.createHtmlOutput("Contacts downloaded to sheet!");
     } catch (e) {
+      Logger.log(e);
       HtmlService.createHtmlOutput(e);
     }
   } else {
