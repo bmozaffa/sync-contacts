@@ -64,7 +64,10 @@ function syncSheet(sheetId) {
       sheet.getRange(i + 1, 1, 1, 8).setValues([getContactRow(contact)]);
     }
   }
-  setNextSyncToken(sheetId, response.nextSyncToken);
+  if (response.nextSyncToken) {
+    //Sometimes the response does not contain any info, possibly because there are no changes at all and previous sync token remains valid
+    setNextSyncToken(sheetId, response.nextSyncToken);
+  }
 }
 
 function getControls(sheetId) {
