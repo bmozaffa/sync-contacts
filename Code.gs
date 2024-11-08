@@ -1,34 +1,13 @@
-function getSheetId() {
-  return "10IVTc2hmZroOQ4xcXJ4cbR0gDXNIzpuoG2qXeYK-PHM";
-}
-
-function getControls() {
-  const controls = {};
-  let sheet = SpreadsheetApp.openById(getSheetId()).getSheetByName("Controls");
-  let values = sheet.getRange(1, 1, sheet.getLastRow(), 2).getValues();
-  for (row of values) {
-    controls[row[0]] = row[1];
-  }
-  return controls;
-}
-
-function setNextSyncToken(syncToken) {
-  let sheet = SpreadsheetApp.openById(getSheetId()).getSheetByName("Controls");
-  let values = sheet.getRange(1, 1, sheet.getLastRow(), 2).getValues();
-  for (let i = 0; i < values.length; i++) {
-    if (values[i][0] === "SyncToken") {
-      Logger.log("Will set SyncToken to " + syncToken + " for next run");
-      sheet.getRange(i + 1, 2, 1, 1).setValue(syncToken);
-    }
-  }
-}
-
 function sync() {
-  const controls = getControls();
-  let sheet = SpreadsheetApp.openById(getSheetId()).getSheetByName(controls.SheetName);
+  syncSheet("1i7y_tFpeO68SetmsU2t-C6LsFETuZtkJGY5AVZ2PHW8");
+}
+
+function syncSheet(sheetId) {
+  const controls = getControls(sheetId);
+  let sheet = SpreadsheetApp.openById(sheetId).getSheetByName(controls.SheetName);
   if (!sheet) {
     Logger.log("Sheet " + controls.SheetName + " doesn't exist, creating it");
-    sheet = SpreadsheetApp.openById(getSheetId()).insertSheet(controls.SheetName, 1);
+    sheet = SpreadsheetApp.openById(sheetId).insertSheet(controls.SheetName, 1);
   }
   if (sheet.getLastRow() === 0) {
     Logger.log("No header row present, creating one");
@@ -85,7 +64,28 @@ function sync() {
       sheet.getRange(i + 1, 1, 1, 8).setValues([getContactRow(contact)]);
     }
   }
-  setNextSyncToken(response.nextSyncToken);
+  setNextSyncToken(sheetId, response.nextSyncToken);
+}
+
+function getControls(sheetId) {
+  const controls = {};
+  let sheet = SpreadsheetApp.openById(sheetId).getSheetByName("Controls");
+  let values = sheet.getRange(1, 1, sheet.getLastRow(), 2).getValues();
+  for (row of values) {
+    controls[row[0]] = row[1];
+  }
+  return controls;
+}
+
+function setNextSyncToken(sheetId, syncToken) {
+  let sheet = SpreadsheetApp.openById(sheetId).getSheetByName("Controls");
+  let values = sheet.getRange(1, 1, sheet.getLastRow(), 2).getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (values[i][0] === "SyncToken") {
+      Logger.log("Will set SyncToken to " + syncToken + " for next run");
+      sheet.getRange(i + 1, 2, 1, 1).setValue(syncToken);
+    }
+  }
 }
 
 function getContactRow(contact) {
@@ -118,9 +118,10 @@ function getMembers(group) {
 
 function getContacts(users, syncToken, excludedTitles) {
   const contacts = new Map();
-
-  let nextSyncToken;
   let nextPageToken;
+  const result = {
+    contacts: contacts
+  }
   do {
     const response = People.People.listDirectoryPeople({
       readMask: 'emailAddresses,locations,names,organizations,relations,externalIds',
@@ -132,6 +133,10 @@ function getContacts(users, syncToken, excludedTitles) {
       syncToken: syncToken,
       requestSyncToken: true
     });
+    if (!response.people) {
+      Logger.log("Got response with no people in it");
+      return result;
+    }
     Logger.log("Got " + response.people.length + " contacts back");
     for (let person of response.people) {
       const emailObject = getPrimary(person.emailAddresses);
@@ -157,12 +162,9 @@ function getContacts(users, syncToken, excludedTitles) {
       }
     }
     nextPageToken = response.nextPageToken;
-    nextSyncToken = response.nextSyncToken;
+    result.nextSyncToken = response.nextSyncToken;
   } while (nextPageToken);
-  return {
-    nextSyncToken: nextSyncToken,
-    contacts: contacts
-  };
+  return result;
 }
 
 function getPrimary(repeatingObject) {
