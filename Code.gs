@@ -2,8 +2,36 @@ function sync() {
   syncSheet("1i7y_tFpeO68SetmsU2t-C6LsFETuZtkJGY5AVZ2PHW8");
 }
 
-function syncSheet(sheetId) {
-  const controls = getControls(sheetId);
+function doGet(e) {
+  const sheetId = e.parameter.sheetId;
+  const groups = e.parameter.groups;
+  if (sheetId) {
+    try {
+      syncSheet(sheetId, groups);
+    } catch (e) {
+      HtmlService.createHtmlOutput(e);
+    }
+  } else {
+    const html = HtmlService.createTemplateFromFile('form');
+    return html.evaluate();
+  }
+}
+
+function doPost(e) {
+  const sheetId = e.parameter.sheetId;
+  const groups = e.parameter.groups;
+  const url = ScriptApp.getService().getUrl() +
+      '?sheetId=' + encodeURIComponent(sheetId) +
+      '&groups=' + encodeURIComponent(groups);
+
+  // Redirect back to the form with the parameters
+  return HtmlService.createHtmlOutput('<html><head>' +
+      '<meta http-equiv="refresh" content="0; url=' + url + '">' +
+      '</head></html>');
+}
+
+function syncSheet(sheetId, groups) {
+  const controls = getControls(sheetId, groups);
   let sheet = SpreadsheetApp.openById(sheetId).getSheetByName(controls.SheetName);
   if (!sheet) {
     Logger.log("Sheet " + controls.SheetName + " doesn't exist, creating it");
@@ -70,12 +98,34 @@ function syncSheet(sheetId) {
   }
 }
 
-function getControls(sheetId) {
+function getControls(sheetId, groups) {
   const controls = {};
-  let sheet = SpreadsheetApp.openById(sheetId).getSheetByName("Controls");
+  const sheetName = "Controls";
+  let sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
+  if (!sheet) {
+    Logger.log("Sheet called " + sheetName + " doesn't exist, creating it");
+    sheet = SpreadsheetApp.openById(sheetId).insertSheet(sheetName, 0);
+  }
+  if (sheet.getLastRow() === 0) {
+    Logger.log("No content present, creating defaults");
+    sheet.appendRow(["Groups", groups]);
+    sheet.appendRow(["SheetName", "Roster"]);
+    sheet.appendRow(["ExcludedTitles", ""]);
+    sheet.appendRow(["DeleteOnTermination", ""]);
+    sheet.appendRow(["SyncToken", ""]);
+    sheet.getRange(1,1,5,1).setFontWeight("bold");
+  }
   let values = sheet.getRange(1, 1, sheet.getLastRow(), 2).getValues();
   for (row of values) {
     controls[row[0]] = row[1];
+  }
+  if (groups) {
+    //override potential groups entry in sheet with provided parameter
+    controls.Groups = groups;
+  }
+  if (!controls.Groups) {
+    //If no groups specified, cannot sync any data
+    throw new Error("Require at least one google group to find and download contacts to sheet");
   }
   return controls;
 }
