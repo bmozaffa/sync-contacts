@@ -1,27 +1,52 @@
 function sync() {
-  syncSheet("1i7y_tFpeO68SetmsU2t-C6LsFETuZtkJGY5AVZ2PHW8");
+  syncSheet("1i7y_tFpeO68SetmsU2t-C6LsFETuZtkJGY5AVZ2PHW8", );
 }
 
 function doGet(e) {
-  const sheetId = e.parameter.sheetId;
-  const groups = e.parameter.groups;
-  if (sheetId) {
-    try {
-      syncSheet(sheetId, groups);
-      HtmlService.createHtmlOutput("Contacts downloaded to sheet!");
-    } catch (e) {
-      Logger.log(e);
-      HtmlService.createHtmlOutput(e);
+  try {
+    const sheetId = e.parameter.sheetId;
+    const groups = e.parameter.groups;
+    if (sheetId && groups) {
+      return syncForWeb(sheetId, groups);
+    } else if (sheetId) {
+      const storedGroups = getControls(sheetId).Groups;
+      if (storedGroups) {
+        Logger.log("Found groups stored in the sheet: " + storedGroups);
+        return syncForWeb(sheetId, storedGroups);
+      } else {
+        Logger.log("Form accessed with sheetId as " + sheetId + ", will display groups form");
+        const form = HtmlService.createTemplateFromFile('groupsForm');
+        form.sheetId = sheetId;
+        form.formUrl = ScriptApp.getService().getUrl();
+        return form.evaluate();
+      }
+    } else {
+      Logger.log("Form accessed without sheetId, will display sheet form");
+      const form = HtmlService.createTemplateFromFile('sheetForm');
+      form.formUrl = ScriptApp.getService().getUrl();
+      return form.evaluate();
     }
-  } else {
-    const html = HtmlService.createTemplateFromFile('form');
-    return html.evaluate();
+  } catch (e) {
+    Logger.log(e);
+    return HtmlService.createHtmlOutput(e);
+  }
+}
+
+function syncForWeb(sheetId, groups) {
+  try {
+    Logger.log("Web call with sheetId as " + sheetId + " and groups as " + groups + ", will run sync");
+    syncSheet(sheetId, groups);
+    return HtmlService.createHtmlOutput("Contacts downloaded to sheet!");
+  } catch (e) {
+    Logger.log(e);
+    return HtmlService.createHtmlOutput(e);
   }
 }
 
 function doPost(e) {
   const sheetId = e.parameter.sheetId;
   const groups = e.parameter.groups;
+  Logger.log("Got sheetId as " + sheetId + " and groups as " + groups);
   const url = ScriptApp.getService().getUrl() +
       '?sheetId=' + encodeURIComponent(sheetId) +
       '&groups=' + encodeURIComponent(groups);
@@ -34,6 +59,10 @@ function doPost(e) {
 
 function syncSheet(sheetId, groups) {
   const controls = getControls(sheetId, groups);
+  if (!controls.Groups) {
+    //If no groups specified, cannot sync any data
+    throw new Error("Require at least one google group to find and download contacts to sheet");
+  }
   let sheet = SpreadsheetApp.openById(sheetId).getSheetByName(controls.SheetName);
   if (!sheet) {
     Logger.log("Sheet " + controls.SheetName + " doesn't exist, creating it");
@@ -124,10 +153,6 @@ function getControls(sheetId, groups) {
   if (groups) {
     //override potential groups entry in sheet with provided parameter
     controls.Groups = groups;
-  }
-  if (!controls.Groups) {
-    //If no groups specified, cannot sync any data
-    throw new Error("Require at least one google group to find and download contacts to sheet");
   }
   return controls;
 }

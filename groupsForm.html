@@ -9,7 +9,7 @@
         form {
             display: flex;
             flex-direction: column;
-            width: 300px; /* Adjust as needed */
+            width: 500px; /* Adjust as needed */
         }
         p {
             margin-bottom: 10px;
@@ -26,12 +26,12 @@
 <body>
 <form method="post">
     <p>
-        <label for="sheetId">Google Sheet ID:</label>
-        <input type="text" id="sheetId" name="sheetId" value="" placeholder=".../spreadsheets/d/[ID]">
+        <label>Google Sheet ID:</label>
+        <label><?= sheetId ?></label>
     </p>
     <p>
         <label for="groups">Google Groups:</label>
-        <input type="text" id="groups" name="groups" placeholder="xyz-all@redhat.com,adb-directs@redhat.com">
+        <input type="text" id="groups" name="groups" placeholder="xyz-all@redhat.com,xyz-directs@redhat.com">
     </p>
     <input type="submit" value="Sync">
 </form>
