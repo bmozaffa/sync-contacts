@@ -6,6 +6,7 @@ function doGet(e) {
   try {
     const sheetId = e.parameter.sheetId;
     const groups = e.parameter.groups;
+    Logger.log("Web deployment called with " + sheetId + " and " + groups);
     if (sheetId && groups) {
       return syncForWeb(sheetId, groups);
     } else if (sheetId) {
@@ -132,7 +133,13 @@ function syncSheet(sheetId, groups) {
 function getControls(sheetId, groups) {
   const controls = {};
   const sheetName = "Controls";
-  let sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
+  let sheet;
+  try {
+    sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
+  } catch (e) {
+    Logger.log("Caught error, will throw it right back up: " + e);
+    throw new Error("Unable to open the specified sheet at https://docs.google.com/spreadsheets/d/" + sheetId);
+  }
   if (!sheet) {
     Logger.log("Sheet called " + sheetName + " doesn't exist, creating it");
     sheet = SpreadsheetApp.openById(sheetId).insertSheet(sheetName, 0);

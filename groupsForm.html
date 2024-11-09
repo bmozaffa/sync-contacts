@@ -24,14 +24,14 @@
     </style>
 </head>
 <body>
-<form method="post">
+<form action="<?= formUrl ?>" method="GET">
     <p>
-        <label>Google Sheet ID:</label>
-        <label><?= sheetId ?></label>
+        <label>Google Sheet:  https://docs.google.com/spreadsheets/d/<?= sheetId ?></label>
     </p>
     <p>
         <label for="groups">Google Groups:</label>
-        <input type="text" id="groups" name="groups" placeholder="xyz-all@redhat.com,xyz-directs@redhat.com">
+        <input type="hidden" id="sheetId" name="sheetId" value="<?= sheetId ?>">
+        <input type="text" id="groups" name="groups" placeholder="xyz-all@redhat.com,adb-directs@redhat.com">
     </p>
     <input type="submit" value="Sync">
 </form>

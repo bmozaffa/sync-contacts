@@ -24,10 +24,10 @@
     </style>
 </head>
 <body>
-<form method="post">
+<form action="<?= formUrl ?>" method="GET">
     <p>
         <label for="sheetId">Google Sheet ID:</label>
-        <input type="text" id="sheetId" name="sheetId" value="" size="28" placeholder="The ID after .../spreadsheets/d/">
+        <input type="text" id="sheetId" name="sheetId" size="28" placeholder="The ID after .../spreadsheets/d/">
     </p>
     <input type="submit" value="Sync">
 </form>
