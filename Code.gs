@@ -117,12 +117,23 @@ function syncSheet(sheetId, groups) {
     }
   }
 
+  let unchangedContacts = [];
   for (let i = 0; i < storedUserIds.length; i++) {
     const contact = response.contacts.get(storedUserIds[i]);
     if (contact) {
-      Logger.log("User " + storedUserIds[i] + " returned from the corporate directory, likely updated, will overwrite their entry in the spreadsheet");
-      sheet.getRange(i + 2, 1, 1, 8).setValues([getContactRow(contact)]);
+      const updatedRow = getContactRow(contact);
+      const currentRow = sheet.getRange(i + 2, 1, 1, 7).getValues()[0];
+      currentRow[3] = currentRow[3].toString();
+      if (JSON.stringify(currentRow) === JSON.stringify(updatedRow)) {
+        unchangedContacts.push(updatedRow[1]);
+      } else {
+        Logger.log("User " + storedUserIds[i] + " returned from the corporate directory, likely updated, will overwrite their entry in the spreadsheet");
+        sheet.getRange(i + 2, 1, 1, 7).setValues([updatedRow]);
+      }
     }
+  }
+  if (unchangedContacts.length > 0) {
+    Logger.log("Corporate directory returned updates in the following contacts, but no relevant fields had changed: " + JSON.stringify(unchangedContacts));
   }
   if (response.nextSyncToken) {
     //Sometimes the response does not contain any info, possibly because there are no changes at all and previous sync token remains valid
@@ -184,7 +195,6 @@ function getContactRow(contact) {
   row.push(contact.title);
   row.push(contact.location);
   row.push(contact.manager);
-  row.push(""); //no termination date
   return row;
 }
 
