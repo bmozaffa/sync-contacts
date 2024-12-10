@@ -121,7 +121,7 @@ function syncSheet(sheetId, groups) {
     const contact = response.contacts.get(storedUserIds[i]);
     if (contact) {
       Logger.log("User " + storedUserIds[i] + " returned from the corporate directory, likely updated, will overwrite their entry in the spreadsheet");
-      sheet.getRange(i + 1, 1, 1, 8).setValues([getContactRow(contact)]);
+      sheet.getRange(i + 2, 1, 1, 8).setValues([getContactRow(contact)]);
     }
   }
   if (response.nextSyncToken) {
