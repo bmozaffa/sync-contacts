@@ -244,7 +244,7 @@ function getContacts(users, syncToken, excludedTitles) {
       const kerberos = email.split("@")[0];
       if (users.has(kerberos)) {
         const work = getPrimary(person.organizations);
-        if (excludedTitles.has(work.title)) {
+        if (excludeTitle(work.title, excludedTitles)) {
           continue;
         }
         contacts.set(kerberos, {
@@ -262,6 +262,15 @@ function getContacts(users, syncToken, excludedTitles) {
     result.nextSyncToken = response.nextSyncToken;
   } while (nextPageToken);
   return result;
+}
+
+function excludeTitle(title, excludedTitles) {
+  for (let excludedTitle of excludedTitles) {
+    if (title.includes(excludedTitle)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getPrimary(repeatingObject) {
